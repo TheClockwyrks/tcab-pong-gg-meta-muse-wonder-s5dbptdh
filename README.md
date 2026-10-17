@@ -1,85 +1,74 @@
-# Carom — starter project
+# Carom
 
-This repository is the starting point for building **Carom**, the game the
-specification under `specs/` describes. Read `specs/overview.md` first; it says
-how the rest of the specification is organized.
+Carom is a top-down paddle duel that runs entirely in the browser. Two paddles
+face each other across a dark 1280×720 field while a ball ricochets between
+them, off the top and bottom walls, and off a pair of fixed amber obstacles in
+the middle of the field. Score by sending the ball past the far edge behind
+your opponent's paddle. First to 11 points, ahead by at least 2, wins.
 
-The project is already wired up. It builds on the **Simple 2D** engine, which is
-installed as an ordinary dependency and documents itself under `engine/` — read
-that alongside the specs. What is missing is the game.
+Carom's signature mechanic is **spin**: strike the ball while your paddle is
+moving and its flight curves afterward — downward motion bends it down,
+upward motion bends it up, and the curve fades over about a second. Combined
+with the two obstacles, that turns every rally into a bank-shot puzzle: spin a
+shot around a block, or bounce it off a block and a wall to beat a guard who
+is reading the straight line.
 
-## What you own
+Play **Solo** against an AI that tracks incoming balls and returns to center
+when play goes the other way, or **Versus** with two players sharing one
+keyboard.
 
-**`src/game.ts`, and any new files you add beside it.**
+## Install
 
-Start by declaring and exporting `CaromState`, exactly as `specs/state.md` fixes
-it, and `CaromDebugApi`, the debug and automation surface `specs/instrumentation.md`
-specifies. The stub in `src/game.ts` is written against both names, so the
-project does not compile until they exist — a fresh workspace failing
-`npm run typecheck` is the starting point, not a fault in the project.
+```sh
+npm ci
+```
 
-`src/game.ts` then exports `game`, a `Game<CaromState, CaromDebugApi>`: three
-functions over that state. `initialize` builds the state and the debug surface
-once and returns them together as `[state, debug]`; `update` takes the current
-state as a read-only view (`DeepReadonly<CaromState>`, from `ts-essentials`) and
-returns the next state, advanced against the frame's delta time in seconds; and
-`render` is handed that next state, read-only again, and draws it. The engine
-holds the state by value and replaces it with whatever `update` returns, so a
-frame builds the next state from the current one rather than writing into it,
-and the type is what guarantees that rendering changes nothing. All three
-currently throw `"not implemented"`. Implement them.
+## Run in development
 
-The debug surface is a required deliverable. The engine returns it from
-`engine.debug` exactly as `initialize` handed it over, and that is how the game
-is driven from code, so it is present and exactly as `specs/instrumentation.md`
-specifies. Because nothing holds a writable state, its operations are written in
-the shape of `update`: every one takes the current state first, then the
-arguments its heading names. A pose returns the next state, applied through
-`engine.apply((s) => debug.setScreen(s, "countdown"))`; a reading returns what
-it read, as `debug.snapshot(engine.state)`. Nothing is published to the page.
+```sh
+npm run dev
+```
 
-`CaromState` **is a contract**. Keep every field, under the name, type, and
-meaning `specs/state.md` gives it. You may add fields, but only for data you can
-rebuild from the declared ones: the declared fields are the whole of the
-authoritative state, and the surface's `reset()` restores exactly those.
+Then open the URL Vite prints. Use `npm run preview` to serve a production
+build locally.
 
-Tests you write belong beside your sources as `src/**/*.test.ts`. `npm test`
-runs them in process, with coverage over `src/`. The engine's documentation
-carries a complete worked example of testing a game this way.
+## Production build
 
-## What you must not edit
+```sh
+npm ci
+npm run build
+```
 
-- **`src/main.ts`** — the fixed entry point. It creates the engine over the
-  page's canvas, binds `game` to it, and runs.
-- **`src/constants.ts`** — every figure the specification fixes: geometry,
-  speeds, spin, the match rules, the action names, the cue names. Read from it.
-- **`index.html`** — the page and the canvas the engine fits the field into.
-- **The toolchain** — `package.json`, `tsconfig.json`, `vite.config.ts`,
-  `vitest.config.ts`, `eslint.config.js`, `.prettierrc.json`, `.prettierignore`,
-  and `.gitignore`.
-- **The vendored engine directory** that `package.json` resolves the engine
-  dependency from.
+This type-checks the project and emits the complete static site into `dist/`,
+with `index.html` at its root. Serve that directory as-is from any static
+file server — no backend, accounts, or API keys are needed. Everything is
+drawn in code on a canvas and all sound is synthesized; the build ships no
+art or audio files and fetches nothing at runtime.
 
-Add dependencies to `package.json` if you genuinely need them, and commit the
-`package-lock.json` — the build is installed with `npm ci`. Leave the existing
-entries alone.
+## Controls
 
-## Commands
+| Action                 | Keys                          |
+| ---------------------- | ----------------------------- |
+| Player 1 (left) up     | `W` (or `↑` in Solo)          |
+| Player 1 (left) down   | `S` (or `↓` in Solo)          |
+| Player 2 (right) up    | `↑` (Versus)                  |
+| Player 2 (right) down  | `↓` (Versus)                  |
+| Confirm menu item      | `Enter` or `Space`            |
+| Back                   | `Esc`                         |
+| Pause / resume         | `P` or `Esc`                  |
+| Mute                   | `M`                           |
 
-- `npm run dev` — serves the game with hot reload.
-- `npm run build` — type-checks, then emits the static site into `dist/`.
-- `npm run preview` — serves `dist/` for a final check.
-- `npm run typecheck` — `tsc --noEmit`.
-- `npm run lint` — ESLint.
-- `npm run format` — Prettier, in check mode.
-- `npm test` — Vitest over `src/**/*.test.ts`, with coverage.
+Menus also work with a mouse (move to highlight, click to confirm) and with
+touch. On touchscreens the engine shows a vertical slider for each paddle and
+on-screen menu buttons. Backtick (`` ` ``) toggles the engine's debug overlay.
 
-## Before you finish
+## Developing
 
-- `npm run build` produces `dist/` with `index.html` at its root, and that
-  directory runs as-is on any static host.
-- `npm run typecheck`, `npm run lint`, `npm run format`, and `npm test` all pass.
-  The same four commands are run over the repository you leave behind.
-- **Replace this file** with the `README.md` `specs/overview.md` asks the
-  finished build to ship: what the game is, how to install it, how to run it in
-  development, how to produce the production build, and the controls.
+- `npm run typecheck` — `tsc --noEmit`
+- `npm run lint` — ESLint
+- `npm run format` — Prettier, in check mode
+- `npm test` — Vitest unit tests over `src/`, with coverage
+
+The game is implemented in `src/game.ts` on the Simple 2D engine; see
+`specs/` for the full specification and `showcase/` for the store-page
+presentation.
